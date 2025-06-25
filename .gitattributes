@@ -1,2 +1,127 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+import speech_recognition as sr
+import webbrowser
+import pyttsx3
+import musicLibrary
+import requests
+from openai import OpenAI
+from gtts import gTTS
+import pygame
+import os
+
+#pip install pocketsphinx
+
+recognizer = sr.Recognizer()
+engine = pyttsx3.init()
+newsapi = "fd78b7f5027f4f86b1e4e734a389d4e3"
+
+def speak_old(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def speak(text):
+    if os.path.exists("temp.mp3"):
+        try:
+            os.remove("temp.mp3")
+        except PermissionError:
+            print("Audio file is still in use, cannot overwrite.")
+            return
+
+    # Use gTTS to create the audio file
+    tts = gTTS(text)
+    tts.save('temp.mp3')
+
+    
+
+    # Initialize pygame mixer
+    pygame.mixer.init()
+
+    # Load your MP3 file
+    pygame.mixer.music.load("temp.mp3")  # Replace with your file name
+
+    # Play the audio
+    pygame.mixer.music.play()
+
+    # Keep the program running until the music stops
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)   
+
+    pygame.mixer.music.unload() 
+
+
+
+
+
+
+def processcommand(c):
+    if "open google baba" in c.lower():
+        webbrowser.open("https://google.com")
+
+    elif "open helper" in c.lower():
+        webbrowser.open("https://chatgpt.com")
+
+    elif "open youtube" in c.lower():
+        webbrowser.open("https://youtube.com")
+
+    elif "open netflix" in c.lower():
+        webbrowser.open("https://netflix.com")
+
+    elif "open spotify" in c.lower():
+        webbrowser.open("https://spotify.com")
+
+    elif c.lower().startswith("play"):
+        song = c.lower().split(" ")[1]
+        link = musicLibrary.music[song]
+        webbrowser.open(link)
+
+    elif "news" in c.lower():
+        r = requests.get("https://newsapi.org/v2/top-headlines?sources=bbc-news&apiKey=fd78b7f5027f4f86b1e4e734a389d4e3")
+        if r.status_code == 200:
+            #it is json response
+            data = r.json()
+            #extract the articles
+            articles = data.get("articles")
+            
+            #print the headlines
+            speak("🔸 Top BBC News Headlines:\n")
+            for idx, article in enumerate(articles):
+                speak(f"{idx + 1}. {article['title']}")
+
+    else:
+        #let openAI handle the request
+        pass
+
+
+
+
+if __name__ == "__main__":
+    speak("jack initialising")
+    while True:
+        # Listen for the wake word "Jarvis"
+        # obtain audio from the microphone
+        r = sr.Recognizer()
+
+        print("bolo......")
+        try:
+            with sr.Microphone() as source:
+                print("listening......")
+                audio = r.listen(source, timeout=2, phrase_time_limit=1)
+            word = r.recognize_google(audio)
+            if(word.lower() == "jack"):
+                speak("yeah i am listening")
+           
+           #listen for command
+                with sr.Microphone() as source:
+                    print("jack active...")
+                    audio = r.listen(source)
+                    command = r.recognize_google(audio)
+                
+
+                processcommand(command)
+
+        except Exception as e:
+            print("error; {0}".format(e))
+
+
+       
